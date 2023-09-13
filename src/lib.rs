@@ -1,6 +1,6 @@
 #![no_std]
 
-use embedded_hal_async::spi::{ErrorType, SpiDevice};
+use embedded_hal_async::spi::{ErrorType, Operation, SpiDevice};
 use smart_leds::RGB8;
 
 const PATTERNS: [u8; 4] = [0b1000_1000, 0b1000_1110, 0b1110_1000, 0b1110_1110];
@@ -28,8 +28,9 @@ impl<SPI: SpiDevice<u8>, const N: usize> Ws2812<SPI, N> {
                 }
             }
         }
-        self.spi.write(&self.data).await?;
         let blank = [0_u8; 140];
-        self.spi.write(&blank).await
+        self.spi
+            .transaction(&mut [Operation::Write(&self.data), Operation::Write(&blank)])
+            .await
     }
 }
