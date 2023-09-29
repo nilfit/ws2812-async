@@ -3,9 +3,9 @@
 use embedded_hal_async::spi::{ErrorType, Operation, SpiDevice};
 use smart_leds::RGB8;
 
-const PATTERNS: [u8; 4] = [0b1000_1000, 0b1000_1110, 0b1110_1000, 0b1110_1110];
+const PATTERNS: [u8; 2] = [0b1110_0000, 0b1111_1000];
 
-/// N = 12 * NUM_LEDS
+/// N = 24 * NUM_LEDS
 pub struct Ws2812<SPI: SpiDevice<u8>, const N: usize> {
     spi: SPI,
     data: [u8; N],
@@ -20,15 +20,15 @@ impl<SPI: SpiDevice<u8>, const N: usize> Ws2812<SPI, N> {
         &mut self,
         iter: impl Iterator<Item = RGB8>,
     ) -> Result<(), <SPI as ErrorType>::Error> {
-        for (led_bytes, RGB8 { r, g, b }) in self.data.chunks_mut(12).zip(iter) {
+        for (led_bytes, RGB8 { r, g, b }) in self.data.chunks_mut(24).zip(iter) {
             for (i, mut color) in [g, r, b].into_iter().enumerate() {
-                for ii in 0..4 {
-                    led_bytes[i * 4 + ii] = PATTERNS[((color & 0b1100_0000) >> 6) as usize];
-                    color <<= 2;
+                for ii in 0..8 {
+                    led_bytes[i * 8 + ii] = PATTERNS[((color & 0b1000_0000) >> 7) as usize];
+                    color <<= 1;
                 }
             }
         }
-        let blank = [0_u8; 140];
+        let blank = [0_u8; 280];
         self.spi
             .transaction(&mut [Operation::Write(&self.data), Operation::Write(&blank)])
             .await
